@@ -1,0 +1,5 @@
+homepage: "https://www.seedtag.com/"
+documentation: "https://github.com/seedtag/gtm-server-tag/wiki"
+versions:
+  - sha: 042c935c573b0aa786acd0f6f660d6e54e372511
+    changeNotes: Initial release.
