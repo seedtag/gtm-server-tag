@@ -66,6 +66,7 @@ const getRequestHeader = require('getRequestHeader');
 const getTimestampMillis = require('getTimestampMillis');
 const generateRandom = require('generateRandom');
 const getRemoteAddress = require('getRemoteAddress');
+const sendPixelFromBrowser = require('sendPixelFromBrowser');
 
 const event_name = getEventData('event_name');
 
@@ -104,6 +105,13 @@ sendHttpRequest(requestUrl, {
   method: 'GET' 
 }).then((result) => {
   if (result.statusCode >= 200 && result.statusCode < 400) {
+    if (result.body !== undefined) {
+      const obj = JSON.parse(result.body);
+      if (obj.url !== undefined && obj.url !== "") {
+        sendPixelFromBrowser(obj.url);
+      }
+    }
+    
     data.gtmOnSuccess();
   } else {
     data.gtmOnFailure();
@@ -333,6 +341,27 @@ ___SERVER_PERMISSIONS___
       "isEditedByUser": true
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "send_pixel_from_browser",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "allowedUrls",
+          "value": {
+            "type": 1,
+            "string": "any"
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
   }
 ]
 
@@ -349,13 +378,16 @@ scenarios:
     // Call runCode to run the template's code.
     runCode(mockData);
 
-    // Verify that the tag finished successfully.
+    // Check API calls
+    assertApi("getEventData").wasCalled();
+    assertApi("getRequestHeader").wasNotCalled();
+    assertApi("getRemoteAddress").wasNotCalled();
+    assertApi("sendHttpRequest").wasNotCalled();
+    assertApi("sendPixelFromBrowser").wasNotCalled();
     assertApi('gtmOnSuccess').wasCalled();
+    assertApi('gtmOnFailure').wasNotCalled();
 - name: GA event page_view
-  code: |
-    var statusGtmOnSuccess = false;
-    var statusGtmOnFailure = true;
-
+  code: |-
     const mockData = {
       pid: '1-ade456ef78ade456ef78',
     };
@@ -366,17 +398,19 @@ scenarios:
     runCode(mockData);
 
     // Check API calls
-    assertApi("getEventData").wasCalled();
-    assertApi("getRequestHeader").wasCalled();
-    assertApi("getRemoteAddress").wasCalled();
-    assertApi("sendHttpRequest").wasCalled();
+    callLater(() => {
+      assertApi("getEventData").wasCalled();
+      assertApi("getRequestHeader").wasCalled();
+      assertApi("getRemoteAddress").wasCalled();
+      assertApi("sendHttpRequest").wasCalled();
+      assertApi("sendPixelFromBrowser").wasNotCalled();
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
 
-    assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=visit&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');
+      assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=visit&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');
+    });
 - name: GA event user_engagement
-  code: |
-    var statusGtmOnSuccess = false;
-    var statusGtmOnFailure = true;
-
+  code: |-
     const mockData = {
       pid: '1-ade456ef78ade456ef78',
     };
@@ -387,17 +421,19 @@ scenarios:
     runCode(mockData);
 
     // Check API calls
-    assertApi("getEventData").wasCalled();
-    assertApi("getRequestHeader").wasCalled();
-    assertApi("getRemoteAddress").wasCalled();
-    assertApi("sendHttpRequest").wasCalled();
+    callLater(() => {
+      assertApi("getEventData").wasCalled();
+      assertApi("getRequestHeader").wasCalled();
+      assertApi("getRemoteAddress").wasCalled();
+      assertApi("sendHttpRequest").wasCalled();
+      assertApi("sendPixelFromBrowser").wasNotCalled();
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
 
-    assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=close&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');
+      assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=close&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');
+    });
 - name: GA event seedtag lead
-  code: |
-    var statusGtmOnSuccess = false;
-    var statusGtmOnFailure = true;
-
+  code: |-
     const mockData = {
       pid: '1-ade456ef78ade456ef78',
     };
@@ -408,20 +444,55 @@ scenarios:
     runCode(mockData);
 
     // Check API calls
-    assertApi("getEventData").wasCalled();
-    assertApi("getRequestHeader").wasCalled();
-    assertApi("getRemoteAddress").wasCalled();
-    assertApi("sendHttpRequest").wasCalled();
+    callLater(() => {
+      assertApi("getEventData").wasCalled();
+      assertApi("getRequestHeader").wasCalled();
+      assertApi("getRemoteAddress").wasCalled();
+      assertApi("sendHttpRequest").wasCalled();
+      assertApi("sendPixelFromBrowser").wasNotCalled();
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
 
-    assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=lead&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');
-setup: "const Promise1 = require(\"Promise\");\n\nmock('generateRandom', 2);\n\nmock('getTimestampMillis',\
-  \ 1);\n\nvar genUUID = 'f41000f4-1000-4f41-800f-41000f41000f';\n\nvar gaEventName\
-  \ = 'scroll';\n\nvar sendHttpRequestUrl = '';\n\nmock('getEventData', function(keypath)\
-  \ {\n  if (keypath === 'event_name') {\n    return gaEventName;\n  }\n  \n  if (keypath\
-  \ === 'client_id') {\n    return 'client_id';\n  }  \n\n  if (keypath === 'page_location')\
-  \ {\n    return 'https://test.com/test';\n  }  \n\n  if (keypath === 'event_data')\
-  \ {\n    return 'event_data';\n  }\n  \n  if (keypath === 'screen_resolution') {\n\
-  \    return '1440x900';\n  } \n  \n  if (keypath === 'viewport_size') {\n    return\
+      assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=lead&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');
+    });
+- name: GA event page_view with redirect
+  code: "const JSON1 = require('JSON');\n\nconst mockData = {\n  pid: '1-ade456ef78ade456ef78',\n\
+    };\n\ngaEventName = 'page_view';\n\nmock('sendHttpRequest', function(url, options,\
+    \ body) {\n  sendHttpRequestUrl = url;\n  var result = {};\n  \n  result.headers\
+    \ = {};\n  result.body = JSON1.stringify({url: 'https://redirect.me'});\n  result.statusCode\
+    \ = 200;\n  \n  return Promise1.create((resolve, reject) => {\n    resolve(result);\n\
+    \  });\n});\n\nvar sendPixelFromBrowserUrl = '';\n\nmock('sendPixelFromBrowser',\
+    \ function(url) {\n  sendPixelFromBrowserUrl = url;\n  var result = true;\n\n\
+    \  return Promise1.create((resolve, reject) => {\n    resolve(result);\n  });\n\
+    });\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\n// Check\
+    \ API calls\ncallLater(() => {\n  assertApi(\"getEventData\").wasCalled();\n \
+    \ assertApi(\"getRequestHeader\").wasCalled();\n  assertApi(\"getRemoteAddress\"\
+    ).wasCalled();\n  assertApi(\"sendHttpRequest\").wasCalled();\n  assertApi(\"\
+    sendPixelFromBrowser\").wasCalled();\n  assertApi('gtmOnSuccess').wasCalled();\n\
+    \  assertApi('gtmOnFailure').wasNotCalled();\n\n  assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=visit&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');\n\
+    \n  assertThat(sendPixelFromBrowserUrl).isEqualTo('https://redirect.me');\n});\n\
+    \n"
+- name: GA event page_view with error
+  code: "const mockData = {\n  pid: '1-ade456ef78ade456ef78',\n};\n\ngaEventName =\
+    \ 'page_view';\n\nmock('sendHttpRequest', function(url, options, body) {\n  sendHttpRequestUrl\
+    \ = url;\n  var result = {};\n  \n  result.headers = {};\n  result.statusCode\
+    \ = 500;\n  \n  return Promise1.create((resolve, reject) => {\n    resolve(result);\n\
+    \  });\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Check API calls\ncallLater(() => {\n  assertApi(\"getEventData\").wasCalled();\n\
+    \  assertApi(\"getRequestHeader\").wasCalled();\n  assertApi(\"getRemoteAddress\"\
+    ).wasCalled();\n  assertApi(\"sendHttpRequest\").wasCalled();\n  assertApi(\"\
+    sendPixelFromBrowser\").wasNotCalled();\n  assertApi('gtmOnSuccess').wasNotCalled();\n\
+    \  assertApi('gtmOnFailure').wasCalled();\n\n  assertThat(sendHttpRequestUrl).isEqualTo('https://t.kmtx.io/s?pid=1-ade456ef78ade456ef78&cid=client_id&eid=f41000f4-1000-4f41-800f-41000f41000f&a=visit&ed=event_data&v=gtm_server_1&url=https%3A%2F%2Ftest.com%2Ftest&ref=https%3A%2F%2Freferer.me&ts=1&sr=1440x900&vp=800x600&trk=trkid&t=xhr');\n\
+    });"
+setup: "const Promise1 = require(\"Promise\");\nconst callLater = require('callLater');\n\
+  \nmock('generateRandom', 2);\n\nmock('getTimestampMillis', 1);\n\nvar genUUID =\
+  \ 'f41000f4-1000-4f41-800f-41000f41000f';\n\nvar gaEventName = 'scroll';\n\nvar\
+  \ sendHttpRequestUrl = '';\n\nmock('getEventData', function(keypath) {\n  if (keypath\
+  \ === 'event_name') {\n    return gaEventName;\n  }\n  \n  if (keypath === 'client_id')\
+  \ {\n    return 'client_id';\n  }  \n\n  if (keypath === 'page_location') {\n  \
+  \  return 'https://test.com/test';\n  }  \n\n  if (keypath === 'event_data') {\n\
+  \    return 'event_data';\n  }\n  \n  if (keypath === 'screen_resolution') {\n \
+  \   return '1440x900';\n  } \n  \n  if (keypath === 'viewport_size') {\n    return\
   \ '800x600';\n  } \n  \n  if (keypath === 'user_agent') {\n    return 'Mozilla/5.0\
   \ (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)';\n\
   \  }   \n  \n  fail('getEventData with unknown keypath');\n});\n\nmock('getRequestHeader',\
@@ -429,8 +500,8 @@ setup: "const Promise1 = require(\"Promise\");\n\nmock('generateRandom', 2);\n\n
   \  }\n  \n  fail('getEventData with unknown headerName');\n});\n\nmock('getRemoteAddress',\
   \ '12.345.67.890');\n\nmock('sendHttpRequest', function(url, options, body) {\n\
   \  sendHttpRequestUrl = url;\n  var result = {};\n  \n  result.headers = {};\n \
-  \ result.body = {};\n  result.statusCode = 200;\n  \n  return Promise1.create((resolve,\
-  \ reject) => {\n    resolve(result);\n  });\n});\n"
+  \ result.statusCode = 200;\n  \n  return Promise1.create((resolve, reject) => {\n\
+  \    resolve(result);\n  });\n});\n"
 
 
 ___NOTES___
