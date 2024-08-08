@@ -1,5 +1,7 @@
 homepage: "https://www.seedtag.com/"
 documentation: "https://github.com/seedtag/gtm-server-tag/wiki"
 versions:
+  - sha: 3075307fad09f19b51eaa8519327831601d4ecc0
+    changeNotes: Follow redirect by sending pixel from browser.
   - sha: 042c935c573b0aa786acd0f6f660d6e54e372511
     changeNotes: Initial release.
